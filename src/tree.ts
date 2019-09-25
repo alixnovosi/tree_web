@@ -35,6 +35,8 @@ export class TreeData {
     public angle: number = Math.PI / 2;
 
     public children: Tree[] = [];
+
+    public palette: string[] = ["#00FF00"];
 }
 
 export class Tree {
@@ -215,6 +217,31 @@ export class Tree {
 
         for (let child of this.data.children) {
             child.render();
+        }
+
+        if (this.data.children.length == 0) {
+            let leaf_len = 20;
+            let leaf_control_width = 10;
+
+            let leaf_left_x = this.data.end_x - (leaf_control_width/2)*Math.cos(this.data.angle);
+            let leaf_right_x = this.data.end_x - (leaf_control_width/2)*Math.cos(this.data.angle);
+
+            let leaf_mid_y = this.data.end_y - (leaf_len/2)*Math.sin(this.data.angle);
+
+            let leaf_end_y = this.data.end_y - (leaf_len)*Math.sin(this.data.angle);
+            let leaf_end_x = this.data.end_x + (leaf_len)*Math.cos(this.data.angle);
+
+            let color = this.data.palette[Math.floor(Math.random() * this.data.palette.length)];
+
+            this.data.ctx.beginPath();
+            this.data.ctx.strokeStyle = color;
+
+            this.data.ctx.quadraticCurveTo(leaf_left_x, leaf_mid_y, leaf_end_x, leaf_end_y);
+            this.data.ctx.moveTo(this.data.end_x, this.data.end_y);
+            this.data.ctx.quadraticCurveTo(leaf_right_x, leaf_mid_y, leaf_end_x, leaf_end_y);
+            this.data.ctx.fill();
+
+
         }
     }
 
