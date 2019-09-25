@@ -1,5 +1,5 @@
 import Controls from "./controls";
-import Tree from "./tree";
+import { Tree, TreeData } from "./tree";
 
 import "./styles/main.scss";
 
@@ -31,10 +31,13 @@ class App {
         this.base.appendChild(this.canvas);
 
         this.tree = new Tree(
-            this.ctx,
-            this.width / 2,
-            this.height,
-            150,
+            {
+                ...new TreeData(),
+                ctx: this.ctx,
+                start_x: this.width/2,
+                start_y: this.height+10,
+                height: this.height * 0.29,
+            },
         );
     }
 
