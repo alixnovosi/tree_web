@@ -1,10 +1,16 @@
 
 const NUM_CHILDREN = 3;
 const MIN_LENGTH = 50;
-const MAX_LEVEL = 6;
+const MAX_LEVEL = 5;
 
 export class TreeData {
     public ctx: CanvasRenderingContext2D;
+
+    // display bezier debug data.
+    public debug: boolean = false;
+
+    // whether this child should render/create children.
+    public render: boolean = true;
 
     // store root to retrieve their line equation to calculate our first control point.
     public root: Tree = null;
@@ -36,7 +42,7 @@ export class TreeData {
 
     public children: Tree[] = [];
 
-    public palette: string[] = ["#00FF00"];
+    public palette: string[] = ["#4DA63E"];
 }
 
 export class Tree {
@@ -47,9 +53,9 @@ export class Tree {
     ) {
         this.data = data;
 
-        this.data.angle += (Math.random() * 0.7) - 0.35
+        this.data.angle += (Math.random() * 0.5) - 0.25
 
-        let height_alter_factor = (Math.random() * 0.20) + 0.90;
+        let height_alter_factor = (Math.random() * 0.10) + 0.95;
         this.data.height *= height_alter_factor;
 
         let width_alter_factor = (Math.random() * 0.20) + 0.90;
@@ -95,13 +101,19 @@ export class Tree {
                 ),
             ];
 
-            if ((Math.random() * 8) < 2) {
-                this.data.children.splice(1, 1);
+            for (let i = 0; i < this.data.children.length; i++) {
+                if (Math.random() < 0.11) {
+                    this.data.children[i].data.render = false;
+                }
             }
         }
     }
 
     render(): void {
+        if (!this.data.render) {
+            return;
+        }
+
         this.data.ctx.beginPath();
         this.data.ctx.strokeStyle = this.data.color;
         this.data.ctx.lineWidth = this.data.width;
@@ -155,12 +167,11 @@ export class Tree {
             this.data.end_x,
             this.data.end_y,
         );
-        // this.data.ctx.lineTo(this.data.end_x, this.data.end_y)
 
         this.data.ctx.stroke();
 
         // DEBUG render control one.
-        if (false) {
+        if (this.data.debug) {
             this.data.ctx.beginPath();
             this.data.ctx.lineWidth = 5;
             this.data.ctx.fillStyle = "teal";
@@ -215,33 +226,42 @@ export class Tree {
             this.data.ctx.stroke();
         }
 
-        for (let child of this.data.children) {
-            child.render();
+        if (this.data.children.length > 0) {
+            for (let child of this.data.children) {
+                child.render();
+            }
         }
+        let num_leaves = Math.floor(Math.random() * 5);
+        for (let i = 0; i < num_leaves; i++) {
+            let leaf_len = 35;
+            let leaf_control_width = 15;
 
-        if (this.data.children.length == 0) {
-            let leaf_len = 20;
-            let leaf_control_width = 10;
+            let ang = Math.random() * (Math.PI*2);
 
-            let leaf_left_x = this.data.end_x - (leaf_control_width/2)*Math.cos(this.data.angle);
-            let leaf_right_x = this.data.end_x - (leaf_control_width/2)*Math.cos(this.data.angle);
+            let leaf_curve_point = (Math.random() * 0.20) + (1/3);
+            let leaf_mid_x = this.data.end_x + (leaf_len/3)*Math.cos(ang);
+            let leaf_mid_y = this.data.end_y - (leaf_len/3)*Math.sin(ang);
 
-            let leaf_mid_y = this.data.end_y - (leaf_len/2)*Math.sin(this.data.angle);
+            let leaf_left_x = leaf_mid_x - (leaf_control_width)*Math.cos((Math.PI/4) - ang);
+            let leaf_left_y = leaf_mid_y - (leaf_control_width)*Math.sin((Math.PI/4) - ang);
 
-            let leaf_end_y = this.data.end_y - (leaf_len)*Math.sin(this.data.angle);
-            let leaf_end_x = this.data.end_x + (leaf_len)*Math.cos(this.data.angle);
+            let leaf_right_x =  leaf_mid_x + (leaf_control_width)*Math.cos((Math.PI/4) - ang);
+            let leaf_right_y = leaf_mid_y + (leaf_control_width)*Math.sin((Math.PI/4) - ang);
+
+            let leaf_end_y = this.data.end_y - (leaf_len)*Math.sin(ang);
+            let leaf_end_x = this.data.end_x + (leaf_len)*Math.cos(ang);
 
             let color = this.data.palette[Math.floor(Math.random() * this.data.palette.length)];
 
             this.data.ctx.beginPath();
-            this.data.ctx.strokeStyle = color;
-
-            this.data.ctx.quadraticCurveTo(leaf_left_x, leaf_mid_y, leaf_end_x, leaf_end_y);
+            this.data.ctx.fillStyle = color;
             this.data.ctx.moveTo(this.data.end_x, this.data.end_y);
-            this.data.ctx.quadraticCurveTo(leaf_right_x, leaf_mid_y, leaf_end_x, leaf_end_y);
+            this.data.ctx.quadraticCurveTo(leaf_left_x, leaf_left_y, leaf_end_x, leaf_end_y);
+
+            this.data.ctx.moveTo(this.data.end_x, this.data.end_y);
+            this.data.ctx.quadraticCurveTo(leaf_right_x, leaf_right_y, leaf_end_x, leaf_end_y);
             this.data.ctx.fill();
-
-
+            this.data.ctx.stroke();
         }
     }
 
