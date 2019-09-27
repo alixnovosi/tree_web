@@ -42,18 +42,18 @@ export class TreeData {
 
     public children: Tree[] = [];
 
-    public palette: string[] = ["#4DA63E"];
+    public palette: string[] = ["#4DA63E", "#A6FF4D", "#6DA832", "#7AA84C"];
 }
 
 export class Tree {
     public data: TreeData;
 
-    constructor(
-        data: TreeData,
-    ) {
+    constructor(data: TreeData) {
         this.data = data;
 
-        this.data.angle += (Math.random() * 0.5) - 0.25
+        if (this.data.angle != Math.PI / 2) {
+            this.data.angle += (Math.random() * 0.5) - 0.25
+        }
 
         let height_alter_factor = (Math.random() * 0.10) + 0.95;
         this.data.height *= height_alter_factor;
@@ -120,8 +120,6 @@ export class Tree {
         this.data.ctx.moveTo(this.data.start_x, this.data.start_y);
 
         // generate x of control point,
-        // and then find y such that the point lies on the line made by start_x/start_y,
-        // and the previous segment's second control point x and y.
         if (this.data.root) {
             // find dx between our start and parent's C2.
             // for C1 continuity, our C1 must have the same dx on the opposite side of the line.
@@ -151,14 +149,6 @@ export class Tree {
                 Math.random() + this.data.end_y - ((1/5)*this.data.height*Math.sin(Math.PI/4));
         }
 
-        // generate our y-function for our child's benefit once we have the second control point.
-        this.data.y = this.gen_y(
-            this.data.control_x_2,
-            this.data.control_y_2,
-            this.data.end_x,
-            this.data.end_y,
-        )
-
         this.data.ctx.bezierCurveTo(
             this.data.control_x_1,
             this.data.control_y_1,
@@ -172,108 +162,119 @@ export class Tree {
 
         // DEBUG render control one.
         if (this.data.debug) {
-            this.data.ctx.beginPath();
-            this.data.ctx.lineWidth = 5;
-            this.data.ctx.fillStyle = "teal";
-            this.data.ctx.strokeStyle = "teal";
-            this.data.ctx.ellipse(
-                this.data.control_x_1,
-                this.data.control_y_1,
-                3,
-                3,
-                0,
-                0,
-                Math.PI * 2,
-            );
-            this.data.ctx.fill();
-            this.data.ctx.stroke();
-
-            this.data.ctx.beginPath();
-            this.data.ctx.lineWidth = 2;
-            this.data.ctx.strokeStyle = "black";
-            this.data.ctx.moveTo(this.data.start_x, this.data.start_y);
-            this.data.ctx.lineTo(this.data.control_x_1, this.data.control_y_1);
-            this.data.ctx.stroke();
-
-            this.data.ctx.beginPath();
-            this.data.ctx.lineWidth = 2;
-            this.data.ctx.strokeStyle = "black";
-            this.data.ctx.moveTo(this.data.control_x_2, this.data.control_y_2);
-            this.data.ctx.lineTo(this.data.end_x, this.data.end_y);
-            this.data.ctx.stroke();
-
-            this.data.ctx.beginPath();
-            this.data.ctx.lineWidth = 2;
-            this.data.ctx.strokeStyle = "black";
-            this.data.ctx.moveTo(this.data.control_x_1, this.data.control_y_1);
-            this.data.ctx.lineTo(this.data.control_x_2, this.data.control_y_2);
-            this.data.ctx.stroke();
-
-            this.data.ctx.beginPath();
-            this.data.ctx.lineWidth = 5;
-            this.data.ctx.fillStyle = "magenta";
-            this.data.ctx.strokeStyle = "magenta";
-            this.data.ctx.ellipse(
-                this.data.control_x_2,
-                this.data.control_y_2,
-                3,
-                3,
-                0,
-                0,
-                Math.PI * 2,
-            );
-            this.data.ctx.fill();
-            this.data.ctx.stroke();
+            this.draw_debug();
         }
 
         if (this.data.children.length > 0) {
             for (let child of this.data.children) {
                 child.render();
             }
-        }
-        let num_leaves = Math.floor(Math.random() * 5);
-        for (let i = 0; i < num_leaves; i++) {
-            let leaf_len = 35;
-            let leaf_control_width = 15;
-
-            let ang = Math.random() * (Math.PI*2);
-
-            let leaf_curve_point = (Math.random() * 0.20) + (1/3);
-            let leaf_mid_x = this.data.end_x + (leaf_len/3)*Math.cos(ang);
-            let leaf_mid_y = this.data.end_y - (leaf_len/3)*Math.sin(ang);
-
-            let leaf_left_x = leaf_mid_x - (leaf_control_width)*Math.cos((Math.PI/4) - ang);
-            let leaf_left_y = leaf_mid_y - (leaf_control_width)*Math.sin((Math.PI/4) - ang);
-
-            let leaf_right_x =  leaf_mid_x + (leaf_control_width)*Math.cos((Math.PI/4) - ang);
-            let leaf_right_y = leaf_mid_y + (leaf_control_width)*Math.sin((Math.PI/4) - ang);
-
-            let leaf_end_y = this.data.end_y - (leaf_len)*Math.sin(ang);
-            let leaf_end_x = this.data.end_x + (leaf_len)*Math.cos(ang);
-
-            let color = this.data.palette[Math.floor(Math.random() * this.data.palette.length)];
-
-            this.data.ctx.beginPath();
-            this.data.ctx.fillStyle = color;
-            this.data.ctx.moveTo(this.data.end_x, this.data.end_y);
-            this.data.ctx.quadraticCurveTo(leaf_left_x, leaf_left_y, leaf_end_x, leaf_end_y);
-
-            this.data.ctx.moveTo(this.data.end_x, this.data.end_y);
-            this.data.ctx.quadraticCurveTo(leaf_right_x, leaf_right_y, leaf_end_x, leaf_end_y);
-            this.data.ctx.fill();
-            this.data.ctx.stroke();
+        } else {
+            let num_leaves = Math.floor(Math.random() * 5);
+            for (let i = 0; i < num_leaves; i++) {
+                this.draw_leaf();
+            }
         }
     }
 
-    private gen_y(
-        x1: number,
-        y1: number,
-        x2: number,
-        y2: number,
-    ): (number) => number {
-        let slope = (y2 - y1) / (x2 - x1);
-        return (x: number) => {
-            return (slope * (x - x1)) + y1;
-        };
+    private draw_leaf(): void {
+        let leaf_len = 50;
+        let leaf_control_width = 25;
+
+        let ang = Math.random() * (Math.PI*2);
+
+        let leaf_curve_point = (Math.random() * 0.20) + (1/3);
+        let leaf_mid_x = this.data.end_x + (leaf_curve_point)*Math.cos(ang);
+        let leaf_mid_y = this.data.end_y - (leaf_curve_point)*Math.sin(ang);
+
+        let leaf_left_x = leaf_mid_x - (leaf_control_width)*Math.cos((Math.PI/4) - ang);
+        let leaf_left_y = leaf_mid_y - (leaf_control_width)*Math.sin((Math.PI/4) - ang);
+
+        let leaf_right_x =  leaf_mid_x + (leaf_control_width)*Math.cos((Math.PI/4) - ang);
+        let leaf_right_y = leaf_mid_y + (leaf_control_width)*Math.sin((Math.PI/4) - ang);
+
+        let leaf_end_y = this.data.end_y - (leaf_len)*Math.sin(ang);
+        let leaf_end_x = this.data.end_x + (leaf_len)*Math.cos(ang);
+
+        let color = this.data.palette[Math.floor(Math.random() * this.data.palette.length)];
+
+        this.data.ctx.beginPath();
+        this.data.ctx.fillStyle = color;
+        this.data.ctx.moveTo(this.data.end_x, this.data.end_y);
+        this.data.ctx.bezierCurveTo(
+            leaf_left_x,
+            leaf_left_y,
+            leaf_end_x,
+            leaf_end_y,
+            leaf_end_x,
+            leaf_end_y,
+        );
+
+        this.data.ctx.moveTo(this.data.end_x, this.data.end_y);
+        this.data.ctx.bezierCurveTo(
+            leaf_right_x,
+            leaf_right_y,
+            leaf_end_x,
+            leaf_end_y,
+            leaf_end_x,
+            leaf_end_y,
+        );
+        this.data.ctx.fill();
+        this.data.ctx.stroke();
+    }
+
+    private draw_debug(): void {
+        this.data.ctx.beginPath();
+        this.data.ctx.lineWidth = 5;
+        this.data.ctx.fillStyle = "teal";
+        this.data.ctx.strokeStyle = "teal";
+        this.data.ctx.ellipse(
+            this.data.control_x_1,
+            this.data.control_y_1,
+            3,
+            3,
+            0,
+            0,
+            Math.PI * 2,
+        );
+        this.data.ctx.fill();
+        this.data.ctx.stroke();
+
+        this.data.ctx.beginPath();
+        this.data.ctx.lineWidth = 2;
+        this.data.ctx.strokeStyle = "black";
+        this.data.ctx.moveTo(this.data.start_x, this.data.start_y);
+        this.data.ctx.lineTo(this.data.control_x_1, this.data.control_y_1);
+        this.data.ctx.stroke();
+
+        this.data.ctx.beginPath();
+        this.data.ctx.lineWidth = 2;
+        this.data.ctx.strokeStyle = "black";
+        this.data.ctx.moveTo(this.data.control_x_2, this.data.control_y_2);
+        this.data.ctx.lineTo(this.data.end_x, this.data.end_y);
+        this.data.ctx.stroke();
+
+        this.data.ctx.beginPath();
+        this.data.ctx.lineWidth = 2;
+        this.data.ctx.strokeStyle = "black";
+        this.data.ctx.moveTo(this.data.control_x_1, this.data.control_y_1);
+        this.data.ctx.lineTo(this.data.control_x_2, this.data.control_y_2);
+        this.data.ctx.stroke();
+
+        this.data.ctx.beginPath();
+        this.data.ctx.lineWidth = 5;
+        this.data.ctx.fillStyle = "magenta";
+        this.data.ctx.strokeStyle = "magenta";
+        this.data.ctx.ellipse(
+            this.data.control_x_2,
+            this.data.control_y_2,
+            3,
+            3,
+            0,
+            0,
+            Math.PI * 2,
+        );
+        this.data.ctx.fill();
+        this.data.ctx.stroke();
     }
 }
